@@ -1,0 +1,7 @@
+# Python dependencies
+streamlit
+numpy
+pandas
+scikit-learn
+plotly
+joblib
