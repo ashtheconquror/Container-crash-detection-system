@@ -10,56 +10,42 @@ class SignalGenerator:
     def time_axis(self):
         return np.linspace(0, self.duration, self.sample_rate * self.duration)
 
-    def normal_signal(self, t):
-        base = 0.3 * np.sin(2 * np.pi * 0.5 * t)
-        noise = np.random.normal(0, 0.05, len(t))
-        
-        # Occasional small anomalies in normal signals (10% chance)
-        if np.random.random() < 0.10:
-            spike_idx = np.random.randint(0, len(t))
-            noise[spike_idx] += np.random.choice([-0.3, 0.3])
-        
-        return base + noise
-
-    def crash_signal(self, t, severity=8):
-        severity_variation = severity * (1 + np.random.uniform(-0.2, 0.2))
-        
-        impact = severity_variation * np.exp(-20 * (t - 2.5)**2)
-        vibration = 0.5 * np.sin(20 * t)
-        
-        noise_level = np.random.uniform(0.08, 0.15)
-        noise = np.random.normal(0, noise_level, len(t))
-        
-        # Occasional sensor glitches (5% chance)
-        if np.random.random() < 0.05:
-            glitch_idx = np.random.randint(0, len(t))
-            if np.random.random() < 0.5:
-                noise[glitch_idx] += np.random.uniform(1.0, 2.0)
-            else:
-                noise[glitch_idx:glitch_idx+5] *= 0.1
-        
-        return impact + vibration + noise
-
-    def generate_signal(self, label):
+    def generate_signal(self, label, wave_height=1.5, wind_speed=15.0, alignment_score=1.0):
+        """
+        Generate a signal influenced by environmental and load factors.
+        Higher waves/wind increase base vibration (noise).
+        Lower alignment increases signal instability.
+        """
         t = self.time_axis()
-        if label == 0:
-            signal = self.normal_signal(t)
-        elif label == 1:
-            severity = np.random.uniform(2.5, 3.5)
-            signal = self.crash_signal(t, severity=severity)
-        elif label == 2:
-            severity = np.random.uniform(7.0, 9.0)
-            signal = self.crash_signal(t, severity=severity)
-        else:
-            severity = np.random.uniform(4.0, 6.0)
-            signal = self.crash_signal(t, severity=severity) * np.sign(np.sin(t))
         
-        # Add occasional sensor drift or calibration issues (3% chance)
-        if np.random.random() < 0.03:
-            drift = np.linspace(0, np.random.uniform(-0.2, 0.2), len(signal))
-            signal = signal + drift
+        # Base noise scaled by weather (High waves = more 'background' vibration)
+        weather_noise_factor = (wave_height / 10.0) + (wind_speed / 100.0)
+        base_noise_std = 0.05 + (0.2 * weather_noise_factor)
+        
+        # Stability factor (Poor alignment = more 'jitter' in normal motion)
+        stability_factor = 1.1 - alignment_score # 0.1 (good) to 0.6 (bad)
+        
+        if label == 0: # Normal
+            base = 0.3 * np.sin(2 * np.pi * 0.5 * t)
+            noise = np.random.normal(0, base_noise_std * stability_factor, len(t))
+            signal = base + noise
+        elif label == 1: # Mild Impact
+            severity = 2.5 + (2.0 * weather_noise_factor)
+            signal = self.crash_signal(t, severity=severity, base_noise=base_noise_std)
+        elif label == 2: # Severe Crash
+            severity = 7.0 + (3.0 * weather_noise_factor)
+            signal = self.crash_signal(t, severity=severity, base_noise=base_noise_std)
+        else:
+            severity = 4.0 + (2.0 * weather_noise_factor)
+            signal = self.crash_signal(t, severity=severity, base_noise=base_noise_std) * np.sign(np.sin(t))
         
         return signal
+
+    def crash_signal(self, t, severity=8, base_noise=0.1):
+        impact = severity * np.exp(-20 * (t - 2.5)**2)
+        vibration = 0.5 * np.sin(20 * t)
+        noise = np.random.normal(0, base_noise, len(t))
+        return impact + vibration + noise
 
 # For backward compatibility
 def generate_signal(label):

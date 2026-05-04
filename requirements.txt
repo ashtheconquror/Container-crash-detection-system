@@ -1,8 +1,10 @@
-# Python dependencies
-streamlit
+fastapi
+uvicorn
+pydantic
+python-multipart
+joblib
 numpy
-pandas
 scikit-learn
 plotly
-joblib
-pytest
+sqlite3
+asyncio
