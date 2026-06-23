@@ -22,11 +22,11 @@ from services.voyage_manager import voyage_manager
 
 app = FastAPI(title="Container Crash Detection API")
 
-# Security: Tighten CORS for production readiness
+# Security: Allow all origins for the Vercel deployment
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
